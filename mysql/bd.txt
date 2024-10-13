@@ -1,0 +1,32 @@
+create database pruebaFullStack;
+use pruebaFullStack;
+
+
+CREATE TABLE seguridad_tokens (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  token VARCHAR(8) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla para los clientes
+CREATE TABLE clientes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(255),
+  email VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla para registrar los correos enviados
+CREATE TABLE correos_enviados (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  destinatario VARCHAR(255),
+  asunto VARCHAR(255),
+  mensaje TEXT,
+  enviado_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE parametros_globales (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  parametro VARCHAR(255),
+  valor VARCHAR(255)
+);
