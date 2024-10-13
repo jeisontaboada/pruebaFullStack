@@ -13,7 +13,7 @@ const clientsServicePath = path.join(
   "servicioCliente.js"
 );
 const emailServicePath = path.join(__dirname, "servicios", "emailCliente.js");
-// Ejecuta cada microservicio como un proceso hijo
+
 const startService = (servicePath, name) => {
   const service = fork(servicePath);
 
