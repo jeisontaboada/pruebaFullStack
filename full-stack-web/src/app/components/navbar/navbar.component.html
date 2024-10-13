@@ -1,0 +1,48 @@
+<nav class="bg-white w-[320px] h-screen p-3 max-sm:h-auto max-sm:w-screen">
+  <div class="container flex flex-col justify-between gap-4 h-full bg-colorP1 rounded-xl shadow-2xl px-4 py-11 max-sm:pb-1">
+    <div class="flex flex-col gap-16">
+      <div class="max-sm:flex justify-between">
+        <span class="text-white text-2xl font-bold text-center">
+         FULL STACK
+        </span>
+        <div class="hidden max-sm:block text-white" (click)="toggleMenu()">
+          <mat-icon>money</mat-icon>
+        </div>
+      </div>
+
+      <!-- Nueva sintaxis de control de flujo -->
+      @if (isMenuVisible || windowWidth >= 640) {
+        <div class="flex flex-col gap-5">
+       
+          <div class="flex items-center">
+            <a routerLink="/menu/cliente" routerLinkActive="bg-white text-blue font-bold"
+               class="text-gray-300 flex items-center gap-4 text-[20px] py-3 px-3 rounded-md font-medium w-screen">
+               <mat-icon>person</mat-icon>
+               Clientes
+            </a>
+          </div>
+          <div class="flex items-center">
+            <a routerLink="/menu/tamanio" routerLinkActive="bg-white text-blue"
+               class="text-gray-300 flex items-center gap-4 text-[20px] py-3 px-3 rounded-md font-medium w-screen">
+               <mat-icon>list_alt</mat-icon>
+               Pedidos
+            </a>
+          </div>
+        
+        </div>
+      }
+    </div>
+
+    <div class="flex gap-3 justify-center items-center max-sm:justify-start p-3">
+      <img
+        src=""
+        class="w-[60px] h-[60px] rounded-full max-sm:hidden"
+        alt=""
+      />
+      <div class="flex flex-col gap-2 text-white text-[18px] font-normal max-sm:flex-row max-sm:hidden">
+        <span >Admin</span>
+        <span>Jeison Taboada M.</span>
+      </div>
+    </div>
+  </div>
+</nav>

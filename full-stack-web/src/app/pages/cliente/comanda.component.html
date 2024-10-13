@@ -1,0 +1,96 @@
+  <div class="">
+        <form (ngSubmit)="onSubmit()" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 max-w-md w-full">
+          <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="token">
+              token
+            </label>
+            <input
+             [(ngModel)]="token"
+              type="text"
+              name="token"
+              required
+              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              placeholder="Nombre del cliente"
+            />
+          </div>
+      
+          <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="nombre">
+              nombre
+            </label>
+            <input
+            [(ngModel)]="clientData.nombre"
+              type="text"
+              name="nombre"
+              required
+              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              placeholder="Correo electrónico"
+            />
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="email">
+              Email
+            </label>
+            <input
+            [(ngModel)]="clientData.email"
+              type="email"
+              name="email"
+              required
+              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              placeholder="Correo electrónico"
+            />
+          </div>
+      
+          <div class="flex items-center justify-between">
+            <button
+              type="submit"
+              [disabled]="!isTokenValid()"
+              class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            >
+              Crear Cliente
+            </button>
+          </div>
+        </form>
+      </div>
+      
+      <div>
+  <table mat-table [dataSource]="listClientes()" class="mat-elevation-z8">
+    <ng-container matColumnDef="position">
+      <th mat-header-cell *matHeaderCellDef>Nro</th>
+      <td mat-cell *matCellDef="let element; let index = index">
+        {{ index + 1 }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="nombre">
+      <th mat-header-cell *matHeaderCellDef>Nombre</th>
+      <td mat-cell *matCellDef="let element">{{ element.nombre }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="email">
+      <th mat-header-cell *matHeaderCellDef>Email</th>
+      <td mat-cell *matCellDef="let element">{{ element.email }}</td>
+    </ng-container>
+    <ng-container matColumnDef="acciones">
+      <th mat-header-cell *matHeaderCellDef>Acciones</th>
+      <td mat-cell *matCellDef="let element">
+        <button mat-icon-button matTooltip="Editar">
+          <mat-icon>edit</mat-icon>
+        </button>
+
+        <button
+          mat-icon-button
+          (click)="deleteCliente(element.id)"
+          matTooltip="Eliminar"
+        >
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+ 
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+  </table>
+</div>
