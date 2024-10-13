@@ -1,61 +1,63 @@
-
-const fastify = require('fastify')({ logger: true });
-const redis = require('ioredis');
-const amqp = require('amqplib');
-const mysql = require('mysql2/promise');
-const cors = require('@fastify/cors'); 
-
+const fastify = require("fastify")({ logger: true });
+const redis = require("ioredis");
+const amqp = require("amqplib");
+const cors = require("@fastify/cors");
+const db = require("../bd");
 
 // Inicializa Redis
-const redisClient = new redis({ host: '127.0.0.1', port: 6379 }); // Configuración de Redis
-redisClient.on('connect', () => {
-  console.log('Conexión a Redis exitosa');
+const redisClient = new redis({ host: "127.0.0.1", port: 6379 });
+redisClient.on("connect", () => {
+  console.log("Conexión a Redis exitosa");
 });
 
-redisClient.on('error', (err) => {
-  console.error('Error de conexión a Redis:', err);
+redisClient.on("error", (err) => {
+  console.error("Error de conexión a Redis:", err);
 });
-let channel;
-
-// Conexión a MySQL
-const db = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: 'fikmortvy02479bd', 
-  database: 'pruebafullstack' 
-});
-
 
 // Configura CORS
 fastify.register(cors, {
-    origin: '*', 
-  });
-
+  origin: "*",
+});
 
 // Configura RabbitMQ
+let channel;
+
 const initRabbitMQ = async () => {
   try {
-    const connection = await amqp.connect('amqp://localhost');
+    const connection = await amqp.connect("amqp://localhost");
     channel = await connection.createChannel();
-    await channel.assertQueue('email_queue');
-    console.log('Conexión a RabbitMQ exitosa');
+    await channel.assertQueue("email_queue");
+    console.log("Conexión a RabbitMQ exitosa");
   } catch (err) {
-    console.error('Error connecting to RabbitMQ:', err);
+    console.error("Error connecting to RabbitMQ:", err);
     process.exit(1); // Finaliza el proceso si no se puede conectar
   }
 };
 
+// Cargar parámetros globales en Redis desde MySQL
+const parametrosGlobales = async () => {
+  try {
+    const [rows] = await db.query(
+      "SELECT parametro, valor FROM parametros_globales"
+    );
+    rows.forEach(async (row) => {
+      await redisClient.set(row.parametro, row.valor);
+    });
+    console.log("Parámetros globales cargados en Redis");
+  } catch (err) {
+    console.error("Error al cargar los parámetros globales en Redis:", err);
+  }
+};
 
-//Metodo de crear
+// Registrar cliente
 fastify.post('/registrar-cliente', async (request, reply) => {
   const { token, clientData } = request.body;
 
-  // Validar el token (asegúrate de que el token sea válido)
+  // Validar el token
   if (!token || token.length === 0) return reply.status(400).send({ error: 'Token inválido' });
 
- 
   try {
-    const { nombre, email } = clientData; 
+    const { nombre, email } = clientData;
     await db.query('INSERT INTO clientes (nombre, email) VALUES (?, ?)', [nombre, email]);
     console.log('Cliente registrado en la base de datos');
   } catch (dbError) {
@@ -66,9 +68,13 @@ fastify.post('/registrar-cliente', async (request, reply) => {
   // Consultar Redis para determinar si se debe enviar un correo
   const sendEmail = await redisClient.get('sendEmails');
   if (sendEmail === 'true') {
-
-   
-    channel.sendToQueue('email_queue', Buffer.from(JSON.stringify(clientData)));
+    const emailData = {
+      email: clientData.email, // Asegúrate de incluir el email del cliente
+      asunto: 'Bienvenido', // Define el asunto que quieres usar
+      mensaje: `Hola ${clientData.nombre}, gracias por registrarte!` // Mensaje que quieres enviar
+    };
+    
+    channel.sendToQueue('email_queue', Buffer.from(JSON.stringify(emailData)));
     console.log('Mensaje enviado a la cola de correos');
   }
 
@@ -76,59 +82,72 @@ fastify.post('/registrar-cliente', async (request, reply) => {
 });
 
 
-//Metodo de obenter clientes
-fastify.get('/set-email-status', async (request, reply) => {
+// Configurar el estado de envío de correos
+fastify.get("/set-email-status", async (request, reply) => {
   try {
-    await redisClient.set('sendEmails', 'true'); // O 'false' para deshabilitar
-    return { message: 'Parámetro de envío de correos actualizado en Redis' };
+    await redisClient.set("sendEmails", "true");
+    return { message: "Parámetro de envío de correos actualizado en Redis" };
   } catch (err) {
-    console.error('Error al establecer el valor en Redis:', err);
-    return reply.status(500).send({ error: 'Error al actualizar el parámetro en Redis' });
+    console.error("Error al establecer el valor en Redis:", err);
+    return reply
+      .status(500)
+      .send({ error: "Error al actualizar el parámetro en Redis" });
   }
 });
 
 
-  //Metodo de obenter cliente por id
-  fastify.get('/clientes/:id', async (request, reply) => {
-    const { id } = request.params; 
-    try {
-      const [rows] = await db.query('SELECT * FROM clientes WHERE id = ?', [id]);
-      if (rows.length === 0) {
-        return reply.status(404).send({ error: 'Cliente no encontrado' });
-      }
-      return rows[0]; 
-    } catch (dbError) {
-      console.error('Error al obtener el cliente:', dbError);
-      return reply.status(500).send({ error: 'Error al obtener el cliente' });
+fastify.get("/clientes", async (request, reply) => {
+  try {
+    const [rows] = await db.query("SELECT * FROM clientes");
+    if (rows.length === 0) {
+      return reply.status(404).send({ error: "No se encontraron clientes" });
     }
-  });
+    return rows; // Devuelve todos los clientes
+  } catch (dbError) {
+    console.error("Error al obtener los clientes:", dbError);
+    return reply.status(500).send({ error: "Error al obtener los clientes" });
+  }
+});
 
-  //Metodo de eliminar cliente
-  fastify.delete('/clientes/:id', async (request, reply) => {
-    const { id } = request.params; // Obtener el ID de los parámetros de la ruta
-  
-    try {
-      // Ejecutar la consulta para eliminar el cliente
-      const result = await db.query('DELETE FROM clientes WHERE id = ?', [id]);
-  
-      // Verificar si se eliminó algún registro
-      if (result[0].affectedRows === 0) {
-        return reply.status(404).send({ error: 'Cliente no encontrado' });
-      }
-  
-      return reply.status(200).send({ message: 'Cliente eliminado correctamente' });
-    } catch (dbError) {
-      console.error('Error al eliminar el cliente:', dbError);
-      return reply.status(500).send({ error: 'Error al eliminar el cliente' });
+// Obtener cliente por ID
+fastify.get("/clientes/:id", async (request, reply) => {
+  const { id } = request.params;
+  try {
+    const [rows] = await db.query("SELECT * FROM clientes WHERE id = ?", [id]);
+    if (rows.length === 0) {
+      return reply.status(404).send({ error: "Cliente no encontrado" });
     }
-  });
-  
+    return rows[0];
+  } catch (dbError) {
+    console.error("Error al obtener el cliente:", dbError);
+    return reply.status(500).send({ error: "Error al obtener el cliente" });
+  }
+});
 
+// Eliminar cliente
+fastify.delete("/clientes/:id", async (request, reply) => {
+  const { id } = request.params;
+  try {
+    const result = await db.query("DELETE FROM clientes WHERE id = ?", [id]);
+    if (result[0].affectedRows === 0) {
+      return reply.status(404).send({ error: "Cliente no encontrado" });
+    }
+    return reply
+      .status(200)
+      .send({ message: "Cliente eliminado correctamente" });
+  } catch (dbError) {
+    console.error("Error al eliminar el cliente:", dbError);
+    return reply.status(500).send({ error: "Error al eliminar el cliente" });
+  }
+});
+
+// Iniciar la aplicación
 const start = async () => {
   try {
     await fastify.listen({ port: 3002 });
-    await initRabbitMQ(); // Inicia la conexión con RabbitMQ
-    console.log('Microservicio de Clientes en el puerto 3002');
+    await initRabbitMQ();
+    await parametrosGlobales();
+    console.log("Microservicio de Clientes en el puerto 3002");
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

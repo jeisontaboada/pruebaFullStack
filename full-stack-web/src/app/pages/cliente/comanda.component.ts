@@ -10,20 +10,24 @@ import Clientes from '../../interfaces/cliente';
 @Component({
   selector: 'app-comanda',
   standalone: true,
-  imports: [FormsModule, MatTableModule, MatIconModule, MatButtonModule, MatTooltipModule],
-  templateUrl:'./comanda.component.html',
+  imports: [
+    FormsModule,
+    MatTableModule,
+    MatIconModule,
+    MatButtonModule,
+    MatTooltipModule,
+  ],
+  templateUrl: './comanda.component.html',
 })
-export class ClienteComponent implements OnInit  {
-  sdk = inject(SdkService)
+export class ClienteComponent implements OnInit {
+  sdk = inject(SdkService);
   listClientes = signal<Clientes[]>([]);
 
   token: string = '';
   clientData = { nombre: '', email: '' };
   message: string = '';
 
-  displayedColumns: string[] = ['position', 'nombre','email','acciones'];
-
-  
+  displayedColumns: string[] = ['position', 'nombre', 'email', 'acciones'];
 
   ngOnInit() {
     this.getToken();
@@ -37,11 +41,11 @@ export class ClienteComponent implements OnInit  {
       },
       error: (error) => {
         console.error('Error al obtener el token:', error);
-      }
+      },
     });
   }
 
-  getClientes(){ 
+  getClientes() {
     this.sdk.getClientes().subscribe({
       next: (data: any) => {
         this.listClientes.set(data);
@@ -56,21 +60,24 @@ export class ClienteComponent implements OnInit  {
     return this.token.length === 8;
   }
 
-
-  onSubmit(): void {
+  registrarCliente() {
+    if (!this.isTokenValid()) {
+      this.message = 'Token invalido.';
+      return;
+    }
     this.sdk.registratClientes(this.token, this.clientData).subscribe({
       next: (response) => {
         this.message = response.message;
-        this.clientData = { nombre: '', email: '' }; 
-        this.getClientes(); 
+        this.clientData = { nombre: '', email: '' };
+        this.getClientes();
       },
       error: (error) => {
         console.error('Error al registrar el cliente:', error);
         this.message = 'Error al registrar el cliente.';
-      }
+      },
     });
   }
-  
+
   deleteCliente(id: number) {
     this.sdk.deleteCliente(id).subscribe({
       next: (response: any) => {
@@ -82,5 +89,4 @@ export class ClienteComponent implements OnInit  {
       },
     });
   }
-  
 }

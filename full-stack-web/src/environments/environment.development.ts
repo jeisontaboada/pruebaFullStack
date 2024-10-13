@@ -1,3 +1,4 @@
 export const environment = {
-    baseUrl: 'http://localhost:8080/api'
+    seguridadUrl: 'http://localhost:3001',
+    clienteUrl: 'http://localhost:3002'
 };
